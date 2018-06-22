@@ -37,6 +37,7 @@
 #include <android-base/file.h>
 #include <android-base/stringprintf.h>
 #include <cutils/log.h>
+#include <cutils/properties.h>
 #include <netutils/ifc.h>
 #include <private/android_filesystem_config.h>
 #include "wifi.h"
@@ -123,6 +124,7 @@ bool SoftapController::isSoftapStarted() {
 int SoftapController::setSoftap(int argc, char *argv[]) {
     int hidden = 0;
     int channel = AP_CHANNEL_DEFAULT;
+    char value[PROPERTY_VALUE_MAX];
 
     if (argc < 5) {
         ALOGE("Softap set is missing arguments. Please use:");
@@ -138,6 +140,12 @@ int SoftapController::setSoftap(int argc, char *argv[]) {
         if (channel <= 0)
             channel = AP_CHANNEL_DEFAULT;
     }
+
+    property_get("persist.sys.softap.band", value, "0");
+    if (!strcmp(value, "0"))
+        channel = AP_CHANNEL_DEFAULT;
+    else
+        channel = 157; // for 5G
 
     std::string wbuf(StringPrintf("interface=%s\n"
             "driver=nl80211\n"
