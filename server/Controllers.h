@@ -19,6 +19,7 @@
 
 #include <sysutils/FrameworkListener.h>
 
+#include "SoftapController.h"
 #include "BandwidthController.h"
 #include "ClatdController.h"
 #include "EventReporter.h"
@@ -46,6 +47,7 @@ public:
     NetworkController netCtrl;
     TetherController tetherCtrl;
     PppController pppCtrl;
+    SoftapController softapCtrl;
     BandwidthController bandwidthCtrl;
     IdletimerController idletimerCtrl;
     ResolverController resolverCtrl;

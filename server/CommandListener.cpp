@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// #define LOG_NDEBUG 0
+ #define LOG_NDEBUG 1
 
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -34,6 +34,7 @@
 #define LOG_TAG "CommandListener"
 
 #include <cutils/log.h>
+#include <cutils/properties.h>
 #include <netdutils/Status.h>
 #include <netdutils/StatusOr.h>
 #include <netutils/ifc.h>
@@ -52,6 +53,8 @@
 
 #include <string>
 #include <vector>
+
+#define DEBUG 0
 
 namespace android {
 namespace net {
@@ -113,6 +116,7 @@ CommandListener::CommandListener() : FrameworkListener(SOCKET_NAME, true) {
     registerLockingCmd(new NatCmd(), gCtls->tetherCtrl.lock);
     registerLockingCmd(new ListTtysCmd());
     registerLockingCmd(new PppdCmd());
+    registerLockingCmd(new SoftapCmd());
     registerLockingCmd(new BandwidthControlCmd(), gCtls->bandwidthCtrl.lock);
     registerLockingCmd(new IdletimerControlCmd());
     registerLockingCmd(new ResolverCmd());
@@ -133,6 +137,10 @@ int CommandListener::InterfaceCmd::runCommand(SocketClient *cli,
         return 0;
     }
 
+    int i =0;
+    for(i = 0; i < argc; i++) {
+	if(DEBUG) ALOGE("%s: argc = %d | argv[%d] = %s\n",__FUNCTION__,argc,i,argv[i]);
+    }
     if (!strcmp(argv[1], "list")) {
         const auto ifacePairs =
             InterfaceController::getIfaceList();
@@ -357,6 +365,10 @@ int CommandListener::IpFwdCmd::runCommand(SocketClient *cli, int argc, char **ar
     bool matched = false;
     bool success;
 
+    int i =0;
+    for(i = 0; i < argc; i++) {
+	if(DEBUG) ALOGE("%s: argc = %d | argv[%d] = %s\n",__FUNCTION__,argc,i,argv[i]);
+    }
     if (argc == 2) {
         //   0     1
         // ipfwd status
@@ -422,6 +434,10 @@ int CommandListener::TetherCmd::runCommand(SocketClient *cli,
         return 0;
     }
 
+    int i =0;
+    for(i = 0; i < argc; i++) {
+	if(DEBUG) ALOGE("%s: argc = %d | argv[%d] = %s\n",__FUNCTION__,argc,i,argv[i]);
+    }
     if (!strcmp(argv[1], "stop")) {
         rc = gCtls->tetherCtrl.stopTethering();
     } else if (!strcmp(argv[1], "status")) {
@@ -519,7 +535,10 @@ CommandListener::NatCmd::NatCmd() :
 int CommandListener::NatCmd::runCommand(SocketClient *cli,
                                                       int argc, char **argv) {
     int rc = 0;
-
+    int i =0;
+    for(i = 0; i < argc; i++) {
+	if(DEBUG) ALOGE("%s: argc = %d | argv[%d] = %s\n",__FUNCTION__,argc,i,argv[i]);
+    }
     if (argc < 5) {
         cli->sendMsg(ResponseCode::CommandSyntaxError, "Missing argument", false);
         return 0;
@@ -604,6 +623,54 @@ int CommandListener::PppdCmd::runCommand(SocketClient *cli,
     return 0;
 }
 
+CommandListener::SoftapCmd::SoftapCmd() :
+                 NetdCommand("softap") {
+}
+
+int CommandListener::SoftapCmd::runCommand(SocketClient *cli,
+                                        int argc, char **argv) {
+    int rc = ResponseCode::SoftapStatusResult;
+    char *retbuf = NULL;
+
+    int i =0;
+    for(i = 0; i < argc; i++) {
+	if(DEBUG) ALOGE("%s: argc = %d | argv[%d] = %s\n",__FUNCTION__,argc,i,argv[i]);
+    }
+    if (gCtls == nullptr) {
+      cli->sendMsg(ResponseCode::ServiceStartFailed, "SoftAP is not available", false);
+      return -1;
+    }
+    if (argc < 2) {
+        cli->sendMsg(ResponseCode::CommandSyntaxError,
+                     "Missing argument in a SoftAP command", false);
+        return 0;
+    }
+
+    if (!strcmp(argv[1], "startap")) {
+        rc = gCtls->softapCtrl.startSoftap();
+    } else if (!strcmp(argv[1], "stopap")) {
+        rc = gCtls->softapCtrl.stopSoftap();
+    } else if (!strcmp(argv[1], "status")) {
+        asprintf(&retbuf, "Softap service %s running",
+                 (gCtls->softapCtrl.isSoftapStarted() ? "is" : "is not"));
+        cli->sendMsg(rc, retbuf, false);
+        free(retbuf);
+        return 0;
+    } else if (!strcmp(argv[1], "set")) {
+        rc = gCtls->softapCtrl.setSoftap(argc, argv);
+    } else {
+        cli->sendMsg(ResponseCode::CommandSyntaxError, "Unrecognized SoftAP command", false);
+        return 0;
+    }
+
+    if (rc >= 400 && rc < 600)
+      cli->sendMsg(rc, "SoftAP command has failed", false);
+    else
+      cli->sendMsg(rc, "Ok", false);
+
+    return 0;
+}
+
 CommandListener::ResolverCmd::ResolverCmd() :
         NetdCommand("resolver") {
 }
@@ -617,6 +684,10 @@ int CommandListener::ResolverCmd::runCommand(SocketClient *cli, int argc, char *
         return 0;
     }
 
+    int i =0;
+    for(i = 0; i < argc; i++) {
+	if(DEBUG) ALOGE("%s: argc = %d | argv[%d] = %s\n",__FUNCTION__,argc,i,argv[i]);
+    }
     unsigned netId = stringToNetId(argv[2]);
     // TODO: Consider making NetworkController.isValidNetwork() public
     // and making that check here.
@@ -1174,6 +1245,11 @@ int CommandListener::ClatdCmd::runCommand(SocketClient *cli, int argc,
         return 0;
     }
 
+    int i =0;
+    for(i = 0; i < argc; i++) {
+	if(DEBUG) ALOGE("%s: argc = %d | argv[%d] = %s\n",__FUNCTION__,argc,i,argv[i]);
+    }
+
     if (!strcmp(argv[1], "stop")) {
         rc = gCtls->clatdCtrl.stopClatd(argv[2]);
     } else if (!strcmp(argv[1], "status")) {
@@ -1229,6 +1305,11 @@ int CommandListener::StrictCmd::runCommand(SocketClient *cli, int argc,
     if (argc < 2) {
         cli->sendMsg(ResponseCode::CommandSyntaxError, "Missing command", false);
         return 0;
+    }
+
+    int i =0;
+    for(i = 0; i < argc; i++) {
+	if(DEBUG) ALOGE("%s: argc = %d | argv[%d] = %s\n",__FUNCTION__,argc,i,argv[i]);
     }
 
     if (!strcmp(argv[1], "enable")) {
@@ -1299,6 +1380,12 @@ int CommandListener::NetworkCommand::runCommand(SocketClient* client, int argc, 
     // network route [legacy <uid>] remove <netId> <interface> <destination> [nexthop]
     //
     // nexthop may be either an IPv4/IPv6 address or one of "unreachable" or "throw".
+
+    int i =0;
+    for(i = 0; i < argc; i++) {
+	if(DEBUG) ALOGE("%s: argc = %d | argv[%d] = %s\n",__FUNCTION__,argc,i,argv[i]);
+    }
+
     if (!strcmp(argv[1], "route")) {
         if (argc < 6 || argc > 9) {
             return syntaxError(client, "Incorrect number of arguments");
@@ -1352,6 +1439,9 @@ int CommandListener::NetworkCommand::runCommand(SocketClient* client, int argc, 
         }
         unsigned netId = stringToNetId(argv[3]);
         if (!strcmp(argv[2], "add")) {
+		if (!strcmp(argv[4], "wlan0")) {
+			property_set("vendor.netid.wlan0", argv[3]);
+		}
             if (int ret = gCtls->netCtrl.addInterfaceToNetwork(netId, argv[4])) {
                 return operationError(client, "addInterfaceToNetwork() failed", ret);
             }
