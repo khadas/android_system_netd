@@ -126,6 +126,7 @@ LOCAL_SRC_FILES := \
         ResolverController.cpp \
         RouteController.cpp \
         SockDiag.cpp \
+        SoftapController.cpp \
         StrictController.cpp \
         TetherController.cpp \
         TrafficController.cpp \
